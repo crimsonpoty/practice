@@ -1,15 +1,15 @@
-//============================================================================
-// Name        : sudoku_solution.cpp
-// Author      : crimson
-// Version     : 0.1
-// Copyright   :
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+/*
+ * Sudoku.cpp
+ *
+ *  Created on: 2017. 3. 24.
+ *      Author: crimson_88@naver.com
+ */
+
+#include "Sudoku.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
-#include <vector>
 #include <algorithm>
 #include <string>
 #include <sstream>
@@ -19,36 +19,15 @@
 using namespace std;
 
 
-class CSudoku
-{
-public:
-	CSudoku();
-
-	void Input();
-	void Prepare();
-	bool isFillSub(int Row, int Col, int Target);
-	int Solve();
-	bool UniqueCheck(vector<int> & vRef);
-	bool FinalInspection();
-	void Print();
-
-public:
-	vector<vector<int>> mBox;
-	vector<vector<int>> mHorizontal;
-	vector<vector<int>> mVertical;
-	vector<vector<vector<int>>> mSub;
-};
-
-
 CSudoku::CSudoku()
 {
 	mBox.assign(9, vector<int>(0));
 
-	vector<vector<int>> initVector (9, vector<int>(9, 0));
+	vector<vector<int> > initVector (9, vector<int>(9, 0));
 	mHorizontal = initVector;
 	mVertical = initVector;
 
-	mSub.assign(9, vector<vector<int>>(9));
+	mSub.assign(9, vector<vector<int> >(9));
 }
 
 void CSudoku::Input()
@@ -99,6 +78,22 @@ void CSudoku::Prepare()
 			}
 		}
 	}
+}
+
+bool CSudoku::UniqueCheck(vector<int> & vRef)
+{
+	// 중복 원소 제거
+	vector<int> v(vRef);
+	std::sort(v.begin(), v.end(), std::less<int>());
+	auto pos = std::unique(v.begin(), v.end() );
+	v.erase(pos, v.end());
+
+	// 유효성 검사
+	if(45 != accumulate(v.begin(), v.end(), 0)) {
+		return false;
+	}
+
+	return true;
 }
 
 bool CSudoku::isFillSub(int Row, int Col, int Target)
@@ -162,22 +157,6 @@ int CSudoku::Solve()
 	}
 
 	return count;
-}
-
-bool CSudoku::UniqueCheck(vector<int> & vRef)
-{
-	// 중복 원소 제거
-	vector<int> v(vRef);
-	std::sort(v.begin(), v.end(), std::less<int>());
-	auto pos = std::unique(v.begin(), v.end() );
-	v.erase(pos, v.end());
-
-	// 유효성 검사
-	if(45 != accumulate(v.begin(), v.end(), 0)) {
-		return false;
-	}
-
-	return true;
 }
 
 bool CSudoku::FinalInspection()
@@ -248,39 +227,4 @@ void CSudoku::Print()
 #endif
 }
 
-
-int main() {
-	CSudoku _sudoku;
-
-	_sudoku.Input();
-	_sudoku.Prepare();
-
-#if 0 // test mSub
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			cout << "(" << i << "," << j << ")" << endl;
-			for(int k = 0; k < _sudoku.mSub[i][j].size(); k++) {
-				cout << _sudoku.mSub[i][j][k] << " ";
-			}
-			cout << endl;
-		}
-	}
-#endif
-
-	int count = 0;
-	while(_sudoku.Solve()) {
-		if(++count > 1000) break;
-	};
-
-	cout << endl << endl << "count: " << count << " / ";
-
-	if(_sudoku.FinalInspection()) {
-		_sudoku.Print();
-	}
-	else {
-		cout << "Do not solve yet..." << endl;
-	}
-
-	return 0;
-}
 
