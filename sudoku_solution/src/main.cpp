@@ -1,9 +1,9 @@
 //============================================================================
-// Name        : sudoku_solution.cpp
+// Name        : main.cpp
 // Author      : crimson_88@naver.com
 // Version     : V0.2
 // Copyright   : 
-// Description : Hello World in C++, Ansi-style
+// Description : Sudoku Solution in C++, Ansi-style
 //============================================================================
 
 #include <stdio.h>
@@ -19,7 +19,6 @@ int main() {
 	CSudoku _sudoku;
 
 	_sudoku.Input();
-	_sudoku.Prepare();
 
 #if 0 // test mSub
 	for(int i = 0; i < 9; i++) {
@@ -33,17 +32,7 @@ int main() {
 	}
 #endif
 
-	int count = 0;
-	while(_sudoku.Solve()) {
-		if(++count > 1000) break;
-	};
-
-	cout << endl << endl << "count: " << count << " / ";
-
-	if(_sudoku.FinalInspection()) {
-		_sudoku.Print();
-	}
-	else {
+	if(!_sudoku.Solve()) {
 		cout << "Do not solve yet..." << endl;
 	}
 
