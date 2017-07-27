@@ -1,4 +1,4 @@
-/*
+/**
  * Sudoku.cpp
  *
  *  Created on: 2017. 3. 24.
@@ -16,16 +16,16 @@
 #include <iterator>
 #include <numeric>      // std::accumulate
 
+//#define DEBUG_MODE
+
 using namespace std;
 
-///> TODO: 전체적인 코드 정리
-///> TODO: #define DEBUG_MODE 넣어서 cout 부분 수정하기
+///> TODO: 캡슐화할 수 있게 코드 정리
+
 int CSudoku::mSolveCount = 0;
 
 CSudoku::CSudoku()
 {
-//	mCell.assign(9, vector<int>(0));
-
 	vector<vector<int> > initVector (9, vector<int>(9, 0));
 	mHorizontal = initVector;
 	mVertical = initVector;
@@ -36,7 +36,7 @@ CSudoku::CSudoku()
 
 void CSudoku::Input()
 {
-#if 1
+#ifndef DEBUG_MODE
 	char _input[256];
 	for(int i = 0; i < 9; i++) {
 		// 라인별로 입력받기
@@ -56,7 +56,7 @@ void CSudoku::Input()
 			mHorizontal[i][j] = atoi(tokens[j].c_str());
 		}
 	}
-#else // fot test
+#else
 //	string _input("530841620900502800000069001000200010752100986140790053000083042401627395003005060");	// normal - 16
 	string _input("080000001000840300200010067020057009017000080090060075630000700070586000100009600");	// hard - 315
 //	string _input("000060040380000920100090506460050090090000000700180004608905702510007408207300000");
@@ -233,7 +233,9 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 	mSub[Row][Col].clear();
 	Sync(string("Horizontal"), Row, Col);
 
-//	cout << "[InsertInHorAndRemoveSub(Hor)]: " << endl; for(int i = 0; i < 9; i++) { for(int j = 0; j < 9; j++) { cout << mHorizontal[i][j] << " "; } cout <<endl; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+	cout << "[InsertInHorAndRemoveSub(Hor)]: " << endl; for(int i = 0; i < 9; i++) { for(int j = 0; j < 9; j++) { cout << mHorizontal[i][j] << " "; } cout <<endl; } cout <<endl; // for test
+#endif
 
 	///> 채워진 값을 후보군에서 없애는 부분
 	int cell = (Row / 3) * 3 + (Col / 3);
@@ -246,7 +248,9 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 			auto it = find(mSub[x + i][y + j].begin(), mSub[x + i][y + j].end(), Target);
 			if(it != mSub[x + i][y + j].end()) {
 				mSub[x + i][y + j].erase(it);
-//				cout << "[InsertInHorAndRemoveSub(RemCel)]: " << Target << " is erased - mSub[" << x + i << "][" << y + j << "]: "; for(auto& a: mSub[x + i][y + j]) { cout << a << " "; } cout << endl; // for test
+#ifdef DEBUG_MODE
+				cout << "[InsertInHorAndRemoveSub(RemCel)]: " << Target << " is erased - mSub[" << x + i << "][" << y + j << "]: "; for(auto& a: mSub[x + i][y + j]) { cout << a << " "; } cout << endl; // for test
+#endif
 			}
 		}
 	}
@@ -256,14 +260,18 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 		auto it = find(mSub[Row][k].begin(), mSub[Row][k].end(), Target);
 		if(it != mSub[Row][k].end()) {
 			mSub[Row][k].erase(it);
-//			cout << "[InsertInHorAndRemoveSub(RemHor)]: " << Target << " is erased - mSub[" << Row << "][" << k << "]: "; for(auto& a: mSub[Row][k]) { cout << a << " "; } cout << endl; // for test
+#ifdef DEBUG_MODE
+			cout << "[InsertInHorAndRemoveSub(RemHor)]: " << Target << " is erased - mSub[" << Row << "][" << k << "]: "; for(auto& a: mSub[Row][k]) { cout << a << " "; } cout << endl; // for test
+#endif
 		}
 
 		///> 세로
 		it = find(mSub[k][Col].begin(), mSub[k][Col].end(), Target);
 		if(it != mSub[k][Col].end()) {
 			mSub[k][Col].erase(it);
-//			cout << "[InsertInHorAndRemoveSub(RemVer)]: " << Target << " is erased - mSub[" << k << "][" << Col << "]: "; for(auto& a: mSub[k][Col]) { cout << a << " "; } cout << endl; // for test
+#ifdef DEBUG_MODE
+			cout << "[InsertInHorAndRemoveSub(RemVer)]: " << Target << " is erased - mSub[" << k << "][" << Col << "]: "; for(auto& a: mSub[k][Col]) { cout << a << " "; } cout << endl; // for test
+#endif
 		}
 	}
 }
@@ -320,7 +328,8 @@ bool CSudoku::Solve()
 	}
 
 	///> TODO: 아직 Extreme은 해결하지 못함
-	///> 고민: Hard도 못푸는 상황에서 어떻게 현재 상태를 기억하면서 찍을 것 인가?
+	///> 고민: Hard도 못푸는 상황에서 어떻게 현재 상태를 기억하면서 찍을 것인가?
+	///> 	   다른 풀이법을 적용할 것인가?
 
 	return false;
 }
@@ -336,17 +345,14 @@ void CSudoku::Solve_Normal()
 				int value = mSub[i][j][0];
 
 				// 후보군이 1개일 때, 숫자 대입
-				//				mCell[row][col] = value;
-				//				mHorizontal[i][j] = value;
-				//				mVertical[j][i] = value;
 				InsertInHorAndRemoveSub(i, j, value);
-
 				count++;
 			}
 		}
 	}
 
 	mSolveCount++;
+
 	///> 해결될 때까지 재귀
 	if(count) Solve_Normal();
 }
@@ -357,18 +363,10 @@ void CSudoku::Solve_Hard()
 	int count = 0;
 
 	///> 행에서 1개 남은 부분 조사해서 숫자 채우기
-/*
-	for(auto it = mHorizontal.begin(); it != mHorizontal.end(); it++) {
-		if(1 == std::count((*it).begin(), (*it).end(), 0)) {
-			if(FillRemainOne((*it))) count++;
-		}
-	}
-*/
 	for(int i = 0; i < 9; i++) {
 		if(1 == std::count(mHorizontal[i].begin(), mHorizontal[i].end(), 0)) {
 			int col = FillRemainOne(mHorizontal[i]);
 			if(col) {
-//				if(!mSub[i][col].empty()) mSub[i][col].clear();
 				mSub[i][col].clear();
 				count++;
 			}
@@ -377,18 +375,10 @@ void CSudoku::Solve_Hard()
 	Sync(string("Horizontal"));
 
 	///> 열에서 1개 남은 부분 조사해서 숫자 채우기
-/*
-	for(auto it = mVertical.begin(); it != mVertical.end(); it++) {
-		if(1 == std::count((*it).begin(), (*it).end(), 0)) {
-			if(FillRemainOne((*it))) count++;
-		}
-	}
-*/
 	for(int i = 0; i < 9; i++) {
 		if(1 == std::count(mVertical[i].begin(), mVertical[i].end(), 0)) {
 			int row = FillRemainOne(mVertical[i]);
 			if(row) {
-//				if(!mSub[row][i].empty()) mSub[row][i].clear();
 				mSub[row][i].clear();
 				count++;
 			}
@@ -397,20 +387,12 @@ void CSudoku::Solve_Hard()
 	Sync(string("Vertical"));
 
 	///> 셀에서 1개 남은 부분 조사해서 숫자 채우기
-/*
-	for(auto it = mCell.begin(); it != mCell.end(); it++) {
-		if(1 == std::count((*it).begin(), (*it).end(), 0)) {
-			if(FillRemainOne((*it))) count++;
-		}
-	}
-*/
 	for(int i = 0; i < 9; i++) {
 		if(1 == std::count(mCell[i].begin(), mCell[i].end(), 0)) {
 			int ty = FillRemainOne(mCell[i]);
 			if(ty) {
 				int x = (i / 3) * 3 + (ty / 3);
 				int y = ty - (x % 3) * 3 + (i % 3) * 3;
-//				if(!mSub[x][y].empty()) mSub[x][y].clear();
 				mSub[x][y].clear();
 				count++;
 			}
@@ -439,11 +421,11 @@ void CSudoku::Solve_Hard()
 
 	std::sort(vNum.begin(), vNum.end(), [] (const SNumber & l, const SNumber & r) { return l.count > r.count; });
 //	for test
-/*
+#ifdef DEBUG_MODE
   	for_each(vNum.begin(), vNum.end(), [] (const SNumber s) {
 			cout << "number: " << s.number << " / count: " << s.count <<endl;
 	});
-*/
+#endif
 
 	/*
 	 * 1. 현재 셀과 가로, 세로 셀에서 x가 있는지 확인
@@ -479,7 +461,9 @@ void CSudoku::Solve_Hard()
 						aSub[j] = false;
 					}
 				}
-//				cout << "[Fil] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+				cout << "[Fil] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 
 				/**> 가로 부분 검사 후 소거 */
 				int x2_1 = -1;
@@ -489,7 +473,9 @@ void CSudoku::Solve_Hard()
 
 					///> 검사부분: 셀 012 - 가로 012 / 셀 345 - 가로 345 / 셀 678 - 가로 678
 					int row = (i / 3) * 3 + j;
-//					cout << "[DEBUG - Hor] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") row(" << row << ")" <<endl;	// for test
+#ifdef DEBUG_MODE
+					cout << "[DEBUG - Hor] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") row(" << row << ")" <<endl;	// for test
+#endif
 					auto itH = find(mHorizontal[row].begin(), mHorizontal[row].end(), (*it).number);
 					if(itH != mHorizontal[row].end()) {
 
@@ -498,7 +484,9 @@ void CSudoku::Solve_Hard()
 							int col = j * 3 + k;
 							aSub[col] = false;
 						}
-//						cout << "[Hor] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+						cout << "[Hor] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					}
 
 					/**> 후보군을 이용한 검사 */
@@ -542,7 +530,9 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 3; k++) {
 							int col = j * 3 + k;
 							aSub[col] = false;
-//							cout << "[Hor - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+							cout << "[Hor - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 						}
 					}
 
@@ -554,7 +544,9 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 3; k++) {
 							int col = j * 3 + k;
 							aSub[col] = false;
-//							cout << "[Hor - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+							cout << "[Hor - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 						}
 					}
 				}
@@ -564,7 +556,9 @@ void CSudoku::Solve_Hard()
 					for(int k = 0; k < 3; k++) {
 						aSub[x2_1 * 3 + k] = false;
 						aSub[x2_2 * 3 + k] = false;
-//						cout << "[Hor - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+						cout << "[Hor - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					}
 				}
 
@@ -577,7 +571,9 @@ void CSudoku::Solve_Hard()
 
 					///> 검사부분: 셀 036 - 세로 012 / 셀 147 - 세로 345 / 셀 258 - 세로 678
 					int col = (i % 3) * 3 + j;
-//					cout << "[DEBUG - Ver] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") col(" << col << ")" <<endl;	// for test
+#ifdef DEBUG_MODE
+					cout << "[DEBUG - Ver] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") col(" << col << ")" <<endl;	// for test
+#endif
 					auto itV = find(mVertical[col].begin(), mVertical[col].end(), (*it).number);
 					if(itV != mVertical[col].end()) {
 
@@ -585,7 +581,9 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-//						cout << "[Ver] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+						cout << "[Ver] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					}
 
 					/**> 후보군을 이용한 검사 */
@@ -630,7 +628,9 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-//						cout << "[Ver - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+						cout << "[Ver - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					}
 
 					if(3 == subCount
@@ -641,7 +641,9 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-//						cout << "[Ver - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+						cout << "[Ver - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					}
 				}
 
@@ -651,7 +653,9 @@ void CSudoku::Solve_Hard()
 						aSub[y2_1 + k] = false;
 						aSub[y2_2 + k] = false;
 					}
-//					cout << "[Ver - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+					cout << "[Ver - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 				}
 
 				/**> 1개 셀의 후보군의 동일한 숫자쌍이 있는 경우 */
@@ -693,12 +697,16 @@ void CSudoku::Solve_Hard()
 				///> 중복되는 값이 있다면 해당 후보군 소거
 				for(int j = 0; j < 9; j++) {
 					for(int k = j+1; k < 9; k++) {
-//						cout << ">>>>>>>>>>>>>>>>>>> j,k = " << j << "," << k << endl;
+#ifdef DEBUG_MODE
+						cout << ">>>>>>>>>>>>>>>>>>> j,k = " << j << "," << k << endl;
+#endif
 						if(vSubNum[j].subPosition.size() >= 2
 								&& vSubNum[j].subPosition == vSubNum[k].subPosition) {
 							aSub[j] = false;
 							aSub[k] = false;
-//							cout << "[Dup] aSub: "; for(auto& x: aSub) { cout << x << " "; }; cout << " / j(" << j << ") k(" << k << ") subPosition: "; for(auto& x: vSubNum[j].subPosition) cout << x << " "; cout <<endl; // for test
+#ifdef DEBUG_MODE
+							cout << "[Dup] aSub: "; for(auto& x: aSub) { cout << x << " "; }; cout << " / j(" << j << ") k(" << k << ") subPosition: "; for(auto& x: vSubNum[j].subPosition) cout << x << " "; cout <<endl; // for test
+#endif
 						}
 					}
 				}
@@ -723,7 +731,9 @@ void CSudoku::Solve_Hard()
 
 				///> 후보군 채우기
 				else if(2 == subCount) {
-//					cout << "[2 == subCount] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+					cout << "[2 == subCount] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
+#endif
 					/**> 1. i(셀 기준)와 aSub의 true위치로 좌표를 계산하여 mSub에 대입 */
 
 					///> aSub으로 첫번째 임시 좌표 계산
@@ -736,7 +746,9 @@ void CSudoku::Solve_Hard()
 
 					///> mSub 채우기
 					InsertSub(x, y, (*it).number);
-//					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
+#endif
 					count++;
 
 					/**> 2. i(셀 기준)와 aSub의 true위치로 좌표를 계산하여 mSub에 대입 */
@@ -751,7 +763,9 @@ void CSudoku::Solve_Hard()
 
 					///> mSub 채우기
 					InsertSub(x, y, (*it).number);
-//					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
+#ifdef DEBUG_MODE
+					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
+#endif
 					count++;
 				}
 			}
@@ -759,7 +773,9 @@ void CSudoku::Solve_Hard()
 	}
 
 	mSolveCount++;
-//	cout << "[DEBUG] ->> CSudoku::Solve_Hard: mSolveCount - " << mSolveCount << " count - " << count << endl;
+#ifdef DEBUG_MODE
+	cout << "[DEBUG] ->> CSudoku::Solve_Hard: mSolveCount - " << mSolveCount << " count - " << count << endl;
+#endif
 	///> 해결될 때까지 재귀
 	if(count) Solve_Hard();
 }
@@ -773,21 +789,10 @@ int CSudoku::FillRemainOne(vector<int> & v)
 	for(int i = 1; i <= 9; i++) {
 		if(find(v.begin(), v.end(), i) == v.end()) {
 			auto it = find(v.begin(), v.end(), 0);
-/*
-			for(int j = 0; j < 9; j++) {
-				if(v[j] == 0) cout << "real_pos = " << j <<endl;
-			}
-*/
 			int pos = std::distance(v.begin(), it);
 
 			v.insert(v.erase(it), i);
-//			cout << "[DEBUG | CSudoku::FillRemainOne] pos: " << pos <<endl;
 			return pos;
-
-/*
-			v.insert(v.erase(find(v.begin(), v.end(), 0)), i);
-			return 1;
-*/
 		}
 	}
 
@@ -798,21 +803,29 @@ bool CSudoku::FinalInspection()
 {
 	for(int i = 0; i < 9; i++) {
 		if(!ValidCheck(mCell[i])) {
-//			cout << "ValidCheck(Cell)-i(" << i << ") is false" << endl;
+#ifdef DEBUG_MODE
+			cout << "ValidCheck(Cell)-i(" << i << ") is false" << endl;
+#endif
 			return false;
 		}
 		if(!ValidCheck(mHorizontal[i])) {
-//			cout << "ValidCheck(Horizontal)-i(" << i << ") is false" << endl;
+#ifdef DEBUG_MODE
+			cout << "ValidCheck(Horizontal)-i(" << i << ") is false" << endl;
+#endif
 			return false;
 		}
 		if(!ValidCheck(mVertical[i])) {
-//			cout << "ValidCheck(Vertical)-i(" << i << ") is false" << endl;
+#ifdef DEBUG_MODE
+			cout << "ValidCheck(Vertical)-i(" << i << ") is false" << endl;
+#endif
 			return false;
 		}
 
 		for(int j = 0; j < 9; j++) {
 			if(!mSub[i][j].empty()) {
-//				cout << "ValidCheck(Sub)-i(" << i << ") j(" << j << ") is false" << endl; for(auto& x: mSub[i][j]) cout << x << " "; cout << endl; // for test
+#ifdef DEBUG_MODE
+				cout << "ValidCheck(Sub)-i(" << i << ") j(" << j << ") is false" << endl; for(auto& x: mSub[i][j]) cout << x << " "; cout << endl; // for test
+#endif
 				return false;
 			}
 		}
@@ -823,7 +836,7 @@ bool CSudoku::FinalInspection()
 
 void CSudoku::Print()
 {
-#if 1
+#ifndef DEBUG_MODE
 	cout << endl << "Output: " << endl;
 
 	for(int i = 0; i < 9; i++) {
@@ -837,10 +850,6 @@ void CSudoku::Print()
 	cout << endl;
 #else
 	cout << "Rectangle: " << endl;
-
-	//	for_each(mCell.begin(), mCell.end(), [] (const int i) {
-	//		cout << i << " ";
-	//	});
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
 			cout << mCell[i][j] << " ";
@@ -850,7 +859,6 @@ void CSudoku::Print()
 	cout << endl;
 
 	cout << "Horizontal: " << endl;
-
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
 			cout << mHorizontal[i][j] << " ";
@@ -860,7 +868,6 @@ void CSudoku::Print()
 	cout << endl;
 
 	cout << "Vertical: " << endl;
-
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
 			cout << mVertical[j][i] << " ";
