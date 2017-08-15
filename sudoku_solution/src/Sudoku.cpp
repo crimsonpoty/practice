@@ -1,3 +1,4 @@
+
 /**
  * Sudoku.cpp
  *
@@ -21,6 +22,7 @@
 using namespace std;
 
 ///> TODO: 캡슐화할 수 있게 코드 정리
+///> TODO: DEBUG printf로 매크로 사용해서 변경, 가능하면 MyDebug라는 파일을 만들어서 include 하자
 
 int CSudoku::mSolveCount = 0;
 
@@ -833,6 +835,51 @@ bool CSudoku::FinalInspection()
 
 	return true;
 }
+
+/*bool CSudoku::Inspection(int Row, int Col)
+{
+	///> 행 -> 셀 좌표변환
+	int x = (Row / 3) * 3 + (Col / 3);
+	int y = (Row % 3) * 3 + (Col % 3);
+	if(0 == mHorizontal[Row][Col] || 0 == mVertical[Col][Row] || 0 == mCell[x][y]) {
+		cout << "[DEBUG] Cell value is worng" << mHorizontal[Row][Col] << mVertical[Col][Row] << mCell[x][y] << endl;
+		return false;
+	}
+
+	///> 셀 검사
+	int cell = (Row / 3) * 3 + (Col / 3);
+	x = (cell / 3) * 3;
+	y = (cell % 3) * 3;
+
+	for(int i = 0; i < 3; i++) {
+		for(int j = 0; j < 3; j++) {
+			///> 셀
+			auto it = find(mCell[x + i][y + j].begin(), mCell[x + i][y + j].end(), Target);
+			if(it != mCell[x + i][y + j].end()) {
+				cout << "[DEBUG] duplicated in Cell" << mCell[x][y] << endl;
+				return false;
+			}
+		}
+	}
+
+	for(int k = 0; k < 9; k++) {
+		///> 가로 검사
+		auto it = find(mHorizontal[Row][k].begin(), mHorizontal[Row][k].end(), Target);
+		if(it != mHorizontal[Row][k].end()) {
+			cout << "[DEBUG] duplicated in Horizontal" << mHorizontal[Row][Col] << endl;
+			return false;
+		}
+
+		///> 세로 검사
+		it = find(mVertical[k][Col].begin(), mVertical[k][Col].end(), Target);
+		if(it != mVertical[k][Col].end()) {
+			cout << "[DEBUG] duplicated in Vertical" << mVertical[Col][Row] << endl;
+			return false;
+		}
+	}
+
+	return true;
+}*/
 
 void CSudoku::Print()
 {

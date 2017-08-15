@@ -1,3 +1,4 @@
+
 /**
  * Sudoku.h
  *
@@ -21,18 +22,21 @@ public:
 
 	void Input();
 	bool Solve();
-	bool FinalInspection();
-	void Print();
 	static int mSolveCount;		//for test
 
+protected:
+	bool FinalInspection();
+//	bool Inspection(int Row, int Col);
+	void InsertInHorAndRemoveSub(int Row, int Col, int Target);
+	void InsertSub(int Row, int Col, int Target = 0);
+
 private:
+	void Print();
 	void Sync(string Mode);
 	void Sync(string Mode, int Row, int Col);
 	void Prepare(string Mode);
 	void Solve_Normal();
 	void Solve_Hard();
-	void InsertInHorAndRemoveSub(int Row, int Col, int Target);
-	void InsertSub(int Row, int Col, int Target = 0);
 	void RearrangeSub(int Row, int Col);
 	int FillRemainOne(vector<int> & v);
 	bool ValidCheck(vector<int> & vRef);
