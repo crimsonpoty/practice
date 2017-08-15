@@ -12,11 +12,11 @@
 
 #include "Sudoku.h"
 
+
 using namespace std;
 
 
 int main() {
-
 ///> [Stack]
 /*
 	CSudoku _sudoku;
