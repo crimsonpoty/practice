@@ -6,8 +6,10 @@
  *      Author: crimson_88@naver.com
  */
 
-#ifndef SUDOKU_H_
-#define SUDOKU_H_
+#ifndef _SUDOKU_H_
+#define _SUDOKU_H_
+
+#define __USE_MINGW_ANSI_STDIO 0	// For solve error "multiple definition of 'vsnprintf'"
 
 #include <vector>
 #include <string>
@@ -21,7 +23,9 @@ public:
 	CSudoku();
 
 	void Input();
+	void Input(string InputStr);
 	bool Solve();
+	string GetSolvedSudoku();
 	static int mSolveCount;		//for test
 
 protected:
@@ -47,6 +51,7 @@ private:
 	vector<vector<int> > mHorizontal;
 	vector<vector<int> > mVertical;
 	vector<vector<vector<int> > > mSub;
+	string mStrSolved;
 };
 
 struct SNumber
@@ -61,4 +66,4 @@ struct SSubNumber
 	vector<int> subPosition;
 };
 
-#endif /* SUDOKU_H_ */
+#endif /* _SUDOKU_H_ */

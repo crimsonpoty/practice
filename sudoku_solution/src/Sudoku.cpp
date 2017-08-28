@@ -12,12 +12,13 @@
 #include <algorithm>
 #include <cstdlib>
 #include <sstream>
-#include <functional> 	// less
+#include <functional> 	// std::less
 #include <iostream>
 #include <iterator>
 #include <numeric>      // std::accumulate
 
 //#define DEBUG_MODE
+//#define CONSOLE_PRINTABLE
 
 using namespace std;
 
@@ -34,6 +35,8 @@ CSudoku::CSudoku()
 	mCell = initVector;
 
 	mSub.assign(9, vector<vector<int> >(9));
+
+	mStrSolved = "";
 }
 
 void CSudoku::Input()
@@ -58,7 +61,7 @@ void CSudoku::Input()
 			mHorizontal[i][j] = atoi(tokens[j].c_str());
 		}
 	}
-#else
+#else	// for test
 //	string _input("530841620900502800000069001000200010752100986140790053000083042401627395003005060");	// normal - 16
 	string _input("080000001000840300200010067020057009017000080090060075630000700070586000100009600");	// hard - 315
 //	string _input("000060040380000920100090506460050090090000000700180004608905702510007408207300000");
@@ -69,6 +72,20 @@ void CSudoku::Input()
 		}
 	}
 #endif
+
+	Sync(string("Horizontal"));
+}
+
+void CSudoku::Input(string InputStr)
+{
+	string _input(InputStr);
+
+	for(int i = 0; i < 9; i++) {
+		for(int j = 0; j < 9; j++) {
+			mHorizontal[i][j] = _input[i*9 + j] - 48;
+//			atoi("1");
+		}
+	}
 
 	Sync(string("Horizontal"));
 }
@@ -308,12 +325,16 @@ bool CSudoku::Solve()
 	Solve_Normal();		// for test
 
 	if(FinalInspection()) {
+#ifdef CONSOLE_PRINTABLE
 		cout << "Solved in Normal / Count: " << mSolveCount << endl;
 		Print();
+#endif
 		return true;
 	}
 	else {
+#ifdef CONSOLE_PRINTABLE
 		cout << "Not Solved in Normal / Count: " << mSolveCount << endl;
+#endif
 	}
 
 	mSolveCount = 0;
@@ -321,12 +342,16 @@ bool CSudoku::Solve()
 	Solve_Hard();
 
 	if(FinalInspection()) {
+#ifdef CONSOLE_PRINTABLE
 		cout << "Solved in Hard / Count: " << mSolveCount << endl;
 		Print();
+#endif
 		return true;
 	}
 	else {
+#ifdef CONSOLE_PRINTABLE
 		cout << "Not Solved in Hard / Count: " << mSolveCount << endl;
+#endif
 	}
 
 	///> TODO: 아직 Extreme은 해결하지 못함
@@ -938,3 +963,20 @@ void CSudoku::Print()
 }
 
 
+string CSudoku::GetSolvedSudoku()
+{
+	if(FinalInspection()) {
+		for(auto& x: mHorizontal) {
+			for(auto& y: x) {
+				string tmpStr = to_string(y);
+				mStrSolved.append(tmpStr);
+			}
+		}
+	}
+
+#ifdef DEBUG_MODE
+	cout << endl << mStrSolved.c_str() << endl;
+#endif
+
+	return mStrSolved;
+}
