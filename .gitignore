@@ -53,9 +53,3 @@ modules.order
 *.tar
 *.tar.gz
 *.tar.bz2
-
-### Project files ###
-*.cproject
-*.project
-*.prefs
-

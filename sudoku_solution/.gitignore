@@ -1,0 +1,10 @@
+### Project files ###
+*.cproject
+*.project
+*.prefs
+
+### Folders ###
+Debug/*
+log4cplus-1.2.0/*
+.settings/*
+
