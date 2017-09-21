@@ -17,13 +17,15 @@
 #include <iterator>
 #include <numeric>      // std::accumulate
 
-//#define DEBUG_MODE
-//#define CONSOLE_PRINTABLE
+#include "MyDebug.h"
+
 
 using namespace std;
 
-///> TODO: 캡슐화할 수 있게 코드 정리
-///> TODO: DEBUG printf로 매크로 사용해서 변경, 가능하면 MyDebug라는 파일을 만들어서 include 하자
+
+///> TODO: [8][0] 에러나는 부분 디버깅
+///> TODO: 알고리즘 수정
+///> TODO: 여러번 테스트 후, TRACE 필요 없는 부분 제거
 
 int CSudoku::mSolveCount = 0;
 
@@ -41,7 +43,6 @@ CSudoku::CSudoku()
 
 void CSudoku::Input()
 {
-#ifndef DEBUG_MODE
 	char _input[256];
 	for(int i = 0; i < 9; i++) {
 		// 라인별로 입력받기
@@ -61,17 +62,6 @@ void CSudoku::Input()
 			mHorizontal[i][j] = atoi(tokens[j].c_str());
 		}
 	}
-#else	// for test
-//	string _input("530841620900502800000069001000200010752100986140790053000083042401627395003005060");	// normal - 16
-	string _input("080000001000840300200010067020057009017000080090060075630000700070586000100009600");	// hard - 315
-//	string _input("000060040380000920100090506460050090090000000700180004608905702510007408207300000");
-
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			mHorizontal[i][j] = _input[i*9 + j] - 48;
-		}
-	}
-#endif
 
 	Sync(string("Horizontal"));
 }
@@ -83,7 +73,6 @@ void CSudoku::Input(string InputStr)
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
 			mHorizontal[i][j] = _input[i*9 + j] - 48;
-//			atoi("1");
 		}
 	}
 
@@ -200,8 +189,7 @@ void CSudoku::Prepare(string Mode)
 			}
 		}
 	}
-
-	if(0 == Mode.compare("hard")) {
+	else if(0 == Mode.compare("hard")) {
 		///> 후보항목 초기화
 		for(int i = 0; i < 9; i++) {
 			for(int j = 0; j < 9; j++) {
@@ -252,9 +240,8 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 	mSub[Row][Col].clear();
 	Sync(string("Horizontal"), Row, Col);
 
-#ifdef DEBUG_MODE
-	cout << "[InsertInHorAndRemoveSub(Hor)]: " << endl; for(int i = 0; i < 9; i++) { for(int j = 0; j < 9; j++) { cout << mHorizontal[i][j] << " "; } cout <<endl; } cout <<endl; // for test
-#endif
+	DBG_TRACE("[Hor]: Target(%d) Row(%d) Col(%d)", Target, Row, Col)
+	DBG_TRACE_D2(mHorizontal)
 
 	///> 채워진 값을 후보군에서 없애는 부분
 	int cell = (Row / 3) * 3 + (Col / 3);
@@ -267,9 +254,9 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 			auto it = find(mSub[x + i][y + j].begin(), mSub[x + i][y + j].end(), Target);
 			if(it != mSub[x + i][y + j].end()) {
 				mSub[x + i][y + j].erase(it);
-#ifdef DEBUG_MODE
-				cout << "[InsertInHorAndRemoveSub(RemCel)]: " << Target << " is erased - mSub[" << x + i << "][" << y + j << "]: "; for(auto& a: mSub[x + i][y + j]) { cout << a << " "; } cout << endl; // for test
-#endif
+
+				DBG_TRACE("[RemCel]: %d is erased - mSub[%d][%d]", Target, x + i, y + i)
+				DBG_TRACE_D1(mSub[x + i][y + j])
 			}
 		}
 	}
@@ -279,18 +266,16 @@ void CSudoku::InsertInHorAndRemoveSub(int Row, int Col, int Target)
 		auto it = find(mSub[Row][k].begin(), mSub[Row][k].end(), Target);
 		if(it != mSub[Row][k].end()) {
 			mSub[Row][k].erase(it);
-#ifdef DEBUG_MODE
-			cout << "[InsertInHorAndRemoveSub(RemHor)]: " << Target << " is erased - mSub[" << Row << "][" << k << "]: "; for(auto& a: mSub[Row][k]) { cout << a << " "; } cout << endl; // for test
-#endif
+			DBG_TRACE("[RemVer]: %d is erased - mSub[%d][%d]", Target, Row, k)
+			DBG_TRACE_D1(mSub[Row][k])
 		}
 
 		///> 세로
 		it = find(mSub[k][Col].begin(), mSub[k][Col].end(), Target);
 		if(it != mSub[k][Col].end()) {
 			mSub[k][Col].erase(it);
-#ifdef DEBUG_MODE
-			cout << "[InsertInHorAndRemoveSub(RemVer)]: " << Target << " is erased - mSub[" << k << "][" << Col << "]: "; for(auto& a: mSub[k][Col]) { cout << a << " "; } cout << endl; // for test
-#endif
+			DBG_TRACE("[RemVer]: %d is erased - mSub[%d][%d]", Target, k, Col)
+			DBG_TRACE_D1(mSub[k][Col])
 		}
 	}
 }
@@ -325,33 +310,23 @@ bool CSudoku::Solve()
 	Solve_Normal();		// for test
 
 	if(FinalInspection()) {
-#ifdef CONSOLE_PRINTABLE
-		cout << "Solved in Normal / Count: " << mSolveCount << endl;
 		Print();
-#endif
 		return true;
 	}
 	else {
-#ifdef CONSOLE_PRINTABLE
-		cout << "Not Solved in Normal / Count: " << mSolveCount << endl;
-#endif
+		DBG_INFO("Not Solved in Normal / Count: %d", mSolveCount)
 	}
 
 	mSolveCount = 0;
 	Prepare(string("hard"));
-	Solve_Hard();
+//	Solve_Hard();
 
 	if(FinalInspection()) {
-#ifdef CONSOLE_PRINTABLE
-		cout << "Solved in Hard / Count: " << mSolveCount << endl;
 		Print();
-#endif
 		return true;
 	}
 	else {
-#ifdef CONSOLE_PRINTABLE
-		cout << "Not Solved in Hard / Count: " << mSolveCount << endl;
-#endif
+		DBG_INFO("Not Solved in Hard / Count: %d", mSolveCount)
 	}
 
 	///> TODO: 아직 Extreme은 해결하지 못함
@@ -400,6 +375,8 @@ void CSudoku::Solve_Hard()
 		}
 	}
 	Sync(string("Horizontal"));
+	DBG_TRACE(">>>>> mSub[8][0]:")
+	DBG_TRACE_D1(mSub[8][0])
 
 	///> 열에서 1개 남은 부분 조사해서 숫자 채우기
 	for(int i = 0; i < 9; i++) {
@@ -412,6 +389,8 @@ void CSudoku::Solve_Hard()
 		}
 	}
 	Sync(string("Vertical"));
+	DBG_TRACE(">>>>> mSub[8][0]:")
+	DBG_TRACE_D1(mSub[8][0])
 
 	///> 셀에서 1개 남은 부분 조사해서 숫자 채우기
 	for(int i = 0; i < 9; i++) {
@@ -426,6 +405,8 @@ void CSudoku::Solve_Hard()
 		}
 	}
 	Sync(string("Cell"));
+	DBG_TRACE(">>>>> mSub[8][0]:")
+	DBG_TRACE_D1(mSub[8][0])
 
 	///> 숫자 세기 & 정렬
 	SNumber _s = {0, 0};
@@ -445,14 +426,11 @@ void CSudoku::Solve_Hard()
 			}
 		}
 	}
+	DBG_TRACE(">>>>> mSub[8][0]:")
+	DBG_TRACE_D1(mSub[8][0])
 
 	std::sort(vNum.begin(), vNum.end(), [] (const SNumber & l, const SNumber & r) { return l.count > r.count; });
-//	for test
-#ifdef DEBUG_MODE
-  	for_each(vNum.begin(), vNum.end(), [] (const SNumber s) {
-			cout << "number: " << s.number << " / count: " << s.count <<endl;
-	});
-#endif
+
 
 	/*
 	 * 1. 현재 셀과 가로, 세로 셀에서 x가 있는지 확인
@@ -488,9 +466,8 @@ void CSudoku::Solve_Hard()
 						aSub[j] = false;
 					}
 				}
-#ifdef DEBUG_MODE
-				cout << "[Fil] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+				DBG_TRACE("[Fil] aSub: ")
+				DBG_TRACE_D1(aSub)
 
 				/**> 가로 부분 검사 후 소거 */
 				int x2_1 = -1;
@@ -500,9 +477,8 @@ void CSudoku::Solve_Hard()
 
 					///> 검사부분: 셀 012 - 가로 012 / 셀 345 - 가로 345 / 셀 678 - 가로 678
 					int row = (i / 3) * 3 + j;
-#ifdef DEBUG_MODE
-					cout << "[DEBUG - Hor] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") row(" << row << ")" <<endl;	// for test
-#endif
+					DBG_TRACE("[Hor] num(%d) count(%d) i(%d) j(%d) row(%d)", (*it).number, (*it).count, i, j, row)
+
 					auto itH = find(mHorizontal[row].begin(), mHorizontal[row].end(), (*it).number);
 					if(itH != mHorizontal[row].end()) {
 
@@ -511,9 +487,8 @@ void CSudoku::Solve_Hard()
 							int col = j * 3 + k;
 							aSub[col] = false;
 						}
-#ifdef DEBUG_MODE
-						cout << "[Hor] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+						DBG_TRACE("[Hor - Sub] aSub: ")
+						DBG_TRACE_D1(aSub)
 					}
 
 					/**> 후보군을 이용한 검사 */
@@ -557,9 +532,8 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 3; k++) {
 							int col = j * 3 + k;
 							aSub[col] = false;
-#ifdef DEBUG_MODE
-							cout << "[Hor - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+							DBG_TRACE("[Hor - Sub2] aSub: ")
+							DBG_TRACE_D1(aSub)
 						}
 					}
 
@@ -571,9 +545,8 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 3; k++) {
 							int col = j * 3 + k;
 							aSub[col] = false;
-#ifdef DEBUG_MODE
-							cout << "[Hor - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+							DBG_TRACE("[Hor - Sub3] aSub: ")
+							DBG_TRACE_D1(aSub)
 						}
 					}
 				}
@@ -583,9 +556,8 @@ void CSudoku::Solve_Hard()
 					for(int k = 0; k < 3; k++) {
 						aSub[x2_1 * 3 + k] = false;
 						aSub[x2_2 * 3 + k] = false;
-#ifdef DEBUG_MODE
-						cout << "[Hor - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+						DBG_TRACE("[Hor - Sub22] aSub: ")
+						DBG_TRACE_D1(aSub)
 					}
 				}
 
@@ -598,9 +570,8 @@ void CSudoku::Solve_Hard()
 
 					///> 검사부분: 셀 036 - 세로 012 / 셀 147 - 세로 345 / 셀 258 - 세로 678
 					int col = (i % 3) * 3 + j;
-#ifdef DEBUG_MODE
-					cout << "[DEBUG - Ver] >> num(" << (*it).number << ") count(" << (*it).count << ") i(" << i << ") j(" << j << ") col(" << col << ")" <<endl;	// for test
-#endif
+					DBG_TRACE("[Ver] num(%d) count(%d) i(%d) j(%d) col(%d)", (*it).number, (*it).count, i, j, col)
+
 					auto itV = find(mVertical[col].begin(), mVertical[col].end(), (*it).number);
 					if(itV != mVertical[col].end()) {
 
@@ -608,9 +579,8 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-#ifdef DEBUG_MODE
-						cout << "[Ver] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+						DBG_TRACE("[Ver] aSub: ")
+						DBG_TRACE_D1(aSub)
 					}
 
 					/**> 후보군을 이용한 검사 */
@@ -655,9 +625,8 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-#ifdef DEBUG_MODE
-						cout << "[Ver - Sub2] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+						DBG_TRACE("[Ver - Sub2] aSub: ")
+						DBG_TRACE_D1(aSub)
 					}
 
 					if(3 == subCount
@@ -668,9 +637,8 @@ void CSudoku::Solve_Hard()
 						for(int k = 0; k < 9; k += 3) {
 							aSub[j + k] = false;
 						}
-#ifdef DEBUG_MODE
-						cout << "[Ver - Sub3] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+						DBG_TRACE("[Ver - Sub3] aSub: ")
+						DBG_TRACE_D1(aSub)
 					}
 				}
 
@@ -680,9 +648,8 @@ void CSudoku::Solve_Hard()
 						aSub[y2_1 + k] = false;
 						aSub[y2_2 + k] = false;
 					}
-#ifdef DEBUG_MODE
-					cout << "[Ver - Sub22] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+					DBG_TRACE("[Ver - Sub22] aSub: ")
+					DBG_TRACE_D1(aSub)
 				}
 
 				/**> 1개 셀의 후보군의 동일한 숫자쌍이 있는 경우 */
@@ -724,16 +691,14 @@ void CSudoku::Solve_Hard()
 				///> 중복되는 값이 있다면 해당 후보군 소거
 				for(int j = 0; j < 9; j++) {
 					for(int k = j+1; k < 9; k++) {
-#ifdef DEBUG_MODE
-						cout << ">>>>>>>>>>>>>>>>>>> j,k = " << j << "," << k << endl;
-#endif
 						if(vSubNum[j].subPosition.size() >= 2
 								&& vSubNum[j].subPosition == vSubNum[k].subPosition) {
 							aSub[j] = false;
 							aSub[k] = false;
-#ifdef DEBUG_MODE
-							cout << "[Dup] aSub: "; for(auto& x: aSub) { cout << x << " "; }; cout << " / j(" << j << ") k(" << k << ") subPosition: "; for(auto& x: vSubNum[j].subPosition) cout << x << " "; cout <<endl; // for test
-#endif
+							DBG_TRACE("[Dup] aSub: ")
+							DBG_TRACE_D1(aSub)
+							DBG_TRACE("[Dup] j(%d) k(%d) subPosition: ", j, k)
+							DBG_TRACE_D1(vSubNum[j].subPosition)
 						}
 					}
 				}
@@ -754,13 +719,15 @@ void CSudoku::Solve_Hard()
 					int y = ty - (x % 3) * 3 + (i % 3) * 3;
 					InsertInHorAndRemoveSub(x, y, (*it).number);
 					count++;
+					DBG_TRACE(">>>>> mSub[8][0]:")
+					DBG_TRACE_D1(mSub[8][0])
 				}
 
 				///> 후보군 채우기
 				else if(2 == subCount) {
-#ifdef DEBUG_MODE
-					cout << "[2 == subCount] aSub: "; for(auto& x: aSub) { cout << x << " "; } cout <<endl; // for test
-#endif
+					DBG_TRACE("[2 == subCount] aSub: ")
+					DBG_TRACE_D1(aSub)
+
 					/**> 1. i(셀 기준)와 aSub의 true위치로 좌표를 계산하여 mSub에 대입 */
 
 					///> aSub으로 첫번째 임시 좌표 계산
@@ -773,10 +740,12 @@ void CSudoku::Solve_Hard()
 
 					///> mSub 채우기
 					InsertSub(x, y, (*it).number);
-#ifdef DEBUG_MODE
-					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
-#endif
+					DBG_TRACE("mSub[%d][%d]: ", x, y)
+					DBG_TRACE_D1(mSub[x][y])
+
 					count++;
+					DBG_TRACE(">>>>> mSub[8][0]:")
+					DBG_TRACE_D1(mSub[8][0])
 
 					/**> 2. i(셀 기준)와 aSub의 true위치로 좌표를 계산하여 mSub에 대입 */
 
@@ -790,19 +759,25 @@ void CSudoku::Solve_Hard()
 
 					///> mSub 채우기
 					InsertSub(x, y, (*it).number);
-#ifdef DEBUG_MODE
-					cout << "[mSub][" << x << "][" << y << "]: "; for(auto& a: mSub[x][y]) { cout << a << " "; } cout <<endl; // for test
-#endif
+					DBG_TRACE("mSub[%d][%d]: ", x, y)
+					DBG_TRACE_D1(mSub[x][y])
+
 					count++;
+					DBG_TRACE(">>>>> mSub[8][0]:")
+					DBG_TRACE_D1(mSub[8][0])
 				}
 			}
 		}
 	}
 
 	mSolveCount++;
-#ifdef DEBUG_MODE
-	cout << "[DEBUG] ->> CSudoku::Solve_Hard: mSolveCount - " << mSolveCount << " count - " << count << endl;
-#endif
+
+	if(7 <= mSolveCount && 8 >= mSolveCount) {
+		DBG_TRACE("mSolveCount(%d), mSub[8][0] ", mSolveCount)
+		DBG_TRACE_D1(mSub[8][0])
+		DBG_TRACE_D2(mHorizontal)
+	}
+	DBG_TRACE("[DEBUG] ->> CSudoku::Solve_Hard: mSolveCount - %d count - %d", mSolveCount, count)
 	///> 해결될 때까지 재귀
 	if(count) Solve_Hard();
 }
@@ -830,29 +805,22 @@ bool CSudoku::FinalInspection()
 {
 	for(int i = 0; i < 9; i++) {
 		if(!ValidCheck(mCell[i])) {
-#ifdef DEBUG_MODE
-			cout << "ValidCheck(Cell)-i(" << i << ") is false" << endl;
-#endif
+			DBG_TRACE("ValidCheck(Cell)[%d] is false", i)
 			return false;
 		}
 		if(!ValidCheck(mHorizontal[i])) {
-#ifdef DEBUG_MODE
-			cout << "ValidCheck(Horizontal)-i(" << i << ") is false" << endl;
-#endif
+			DBG_TRACE("ValidCheck(Horizontal)[%d] is false", i)
 			return false;
 		}
 		if(!ValidCheck(mVertical[i])) {
-#ifdef DEBUG_MODE
-			cout << "ValidCheck(Vertical)-i(" << i << ") is false" << endl;
-#endif
+			DBG_TRACE("ValidCheck(Vertical)[%d] is false", i)
 			return false;
 		}
 
 		for(int j = 0; j < 9; j++) {
 			if(!mSub[i][j].empty()) {
-#ifdef DEBUG_MODE
-				cout << "ValidCheck(Sub)-i(" << i << ") j(" << j << ") is false" << endl; for(auto& x: mSub[i][j]) cout << x << " "; cout << endl; // for test
-#endif
+				DBG_TRACE("ValidCheck(Sub)[%d][%d] is false", i, j)
+				DBG_TRACE_D1(mSub[i][j])
 				return false;
 			}
 		}
@@ -867,7 +835,7 @@ bool CSudoku::FinalInspection()
 	int x = (Row / 3) * 3 + (Col / 3);
 	int y = (Row % 3) * 3 + (Col % 3);
 	if(0 == mHorizontal[Row][Col] || 0 == mVertical[Col][Row] || 0 == mCell[x][y]) {
-		cout << "[DEBUG] Cell value is worng" << mHorizontal[Row][Col] << mVertical[Col][Row] << mCell[x][y] << endl;
+		DBG_WRN("Cell value is wrong, mHorizontal[%d][%d]: %d, mVertical[%d][%d]: %d, mCell[%d][%d]: %d", Row, Col, mHorizontal[Row][Col], Col, Row, mVertical[Col][Row], x, y, mCell[x][y])
 		return false;
 	}
 
@@ -881,7 +849,7 @@ bool CSudoku::FinalInspection()
 			///> 셀
 			auto it = find(mCell[x + i][y + j].begin(), mCell[x + i][y + j].end(), Target);
 			if(it != mCell[x + i][y + j].end()) {
-				cout << "[DEBUG] duplicated in Cell" << mCell[x][y] << endl;
+				DBG_WRN("duplicated in Cell, mCell[%d][%d]: %d", x, y, mCell[x][y])
 				return false;
 			}
 		}
@@ -891,14 +859,14 @@ bool CSudoku::FinalInspection()
 		///> 가로 검사
 		auto it = find(mHorizontal[Row][k].begin(), mHorizontal[Row][k].end(), Target);
 		if(it != mHorizontal[Row][k].end()) {
-			cout << "[DEBUG] duplicated in Horizontal" << mHorizontal[Row][Col] << endl;
+			DBG_WRN("duplicated in Horizontal, mHorizontal[%d][%d]: %d", Row, Col, mHorizontal[x][y])
 			return false;
 		}
 
 		///> 세로 검사
 		it = find(mVertical[k][Col].begin(), mVertical[k][Col].end(), Target);
 		if(it != mVertical[k][Col].end()) {
-			cout << "[DEBUG] duplicated in Vertical" << mVertical[Col][Row] << endl;
+			DBG_WRN("duplicated in Vertical, mVertical[%d][%d]: %d", Col, Row, mVertical[x][y])
 			return false;
 		}
 	}
@@ -908,7 +876,7 @@ bool CSudoku::FinalInspection()
 
 void CSudoku::Print()
 {
-#ifndef DEBUG_MODE
+#ifndef DEBUG
 	cout << endl << "Output: " << endl;
 
 	for(int i = 0; i < 9; i++) {
@@ -921,32 +889,14 @@ void CSudoku::Print()
 	}
 	cout << endl;
 #else
-	cout << "Rectangle: " << endl;
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			cout << mCell[i][j] << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;
+	DBG_INFO("Horizontal:")
+	DBG_INFO_D2(mHorizontal)
 
-	cout << "Horizontal: " << endl;
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			cout << mHorizontal[i][j] << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;
+	DBG_INFO("Vertical:")
+	DBG_INFO_D2(mVertical)
 
-	cout << "Vertical: " << endl;
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			cout << mVertical[j][i] << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;
+	DBG_INFO("Rectangle:")
+	DBG_INFO_D2(mCell)
 
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
@@ -974,9 +924,7 @@ string CSudoku::GetSolvedSudoku()
 		}
 	}
 
-#ifdef DEBUG_MODE
-	cout << endl << mStrSolved.c_str() << endl;
-#endif
+	DBG_INFO("%s", mStrSolved.c_str())
 
 	return mStrSolved;
 }
