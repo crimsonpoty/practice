@@ -28,23 +28,17 @@ public:
 	string GetSolvedSudoku();
 	static int mSolveCount;		//for test
 
-protected:
-	bool FinalInspection();
-//	bool Inspection(int Row, int Col);
-	void InsertInHorAndRemoveSub(int Row, int Col, int Target);
-	void InsertSub(int Row, int Col, int Target = 0);
-
 private:
-	void Print();
-	void Sync(string Mode);
-	void Sync(string Mode, int Row, int Col);
-	void Prepare(string Mode);
+	void Sync();
+	void Sync(int Row, int Col);
+	void Prepare();
 	void Solve_Normal();
-	void Solve_Hard();
-	void RearrangeSub(int Row, int Col);
-	int FillRemainOne(vector<int> & v);
+	void Insert(int Row, int Col, int Target);
+	void RemoveSub(int Row, int Col, int Target);
+	bool Inspection();
 	bool ValidCheck(vector<int> & vRef);
-	bool IsFillSub(int Row, int Col, int Target);
+	void Print();
+	void RearrangeSub(int Row, int Col);
 
 private:
 	vector<vector<int> > mCell;
