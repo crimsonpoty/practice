@@ -41,8 +41,16 @@ int main() {
 
 	_sudoku->Input();
 
-	if(!_sudoku->Solve()) {
-		cout << "Do not solve yet..." << endl;
+	if(_sudoku->Solve()) {
+		if(_sudoku->Inspection()) {
+			_sudoku->Print();
+		}
+		else {
+			cout << "Inspection Fail" << endl;
+		}
+	}
+	else {
+		cout << "Can not solved..." << endl;
 	}
 
 	delete _sudoku;
