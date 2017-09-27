@@ -8,3 +8,5 @@ Debug/*
 log4cplus-1.2.0/*
 .settings/*
 
+/Debug/
+/Release/
