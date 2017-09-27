@@ -11,11 +11,23 @@
 
 #define __USE_MINGW_ANSI_STDIO 0	// For solve error "multiple definition of 'vsnprintf'"
 
-#include <vector>
+#include <array>
 #include <string>
 
-using std::vector;
+using std::array;
 using std::string;
+
+
+// 참조: http://sunnyholic.com/81
+// 참조사이트의 알고리즘 반영
+
+struct SSudoku
+{
+	int row;
+	int col;
+	bool num[9];
+};
+
 
 class CSudoku
 {
@@ -23,41 +35,29 @@ public:
 	CSudoku();
 
 	void Input();
-	void Input(string InputStr);
+	void Input(const string & InputStr);
 	bool Solve();
-	string GetSolvedSudoku();
-	static int mSolveCount;		//for test
-
-private:
-	void Sync();
-	void Sync(int Row, int Col);
-	void Prepare();
-	void Solve_Normal();
-	void Insert(int Row, int Col, int Target);
-	void RemoveSub(int Row, int Col, int Target);
 	bool Inspection();
-	bool ValidCheck(vector<int> & vRef);
+
+	string GetSolvedSudoku();
+
 	void Print();
-	void RearrangeSub(int Row, int Col);
 
 private:
-	vector<vector<int> > mCell;
-	vector<vector<int> > mHorizontal;
-	vector<vector<int> > mVertical;
-	vector<vector<vector<int> > > mSub;
+	SSudoku findMinSubCount();
+	SSudoku findPossibleSub(int Row, int Col);
+	int sizeNums(SSudoku s);
+
+private:
+	typedef array<array<int, 9>, 9> SudokuArray;
+	typedef array<array<int*, 9>, 9> pSudokuArray;
+
+	SudokuArray mNum;
+	pSudokuArray mRow;
+	pSudokuArray mCol;
+	pSudokuArray mCell;
+
 	string mStrSolved;
-};
-
-struct SNumber
-{
-	int number;
-	int count;
-};
-
-struct SSubNumber
-{
-	int number;
-	vector<int> subPosition;
 };
 
 #endif /* _SUDOKU_H_ */

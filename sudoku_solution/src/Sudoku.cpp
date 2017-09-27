@@ -9,13 +9,10 @@
 #include "Sudoku.h"
 
 #include <string.h>
-#include <algorithm>
 #include <cstdlib>
 #include <sstream>
-#include <functional> 	// std::less
+#include <vector>
 #include <iostream>
-#include <iterator>
-#include <numeric>      // std::accumulate
 
 #include "MyDebug.h"
 
@@ -23,18 +20,26 @@
 using namespace std;
 
 
-///> TODO: 알고리즘 수정
-
-int CSudoku::mSolveCount = 0;
-
 CSudoku::CSudoku()
 {
-	vector<vector<int> > initVector(9, vector<int>(9, 0));
-	mHorizontal = initVector;
-	mVertical = initVector;
-	mCell = initVector;
+	///> 스도쿠 숫자 초기화
+	for(auto & i: mNum) {
+		for(auto &j: i) {
+			j = 0;
+		}
+	}
 
-	mSub.assign(9, vector<vector<int> >(9));
+	///> 포인터 변수 초기화
+	for(int i = 0; i < 9; i++) {
+		for(int j = 0; j < 9; j++) {
+			mRow[i][j] = &mNum[i][j];
+			mCol[i][j] = &mNum[j][i];
+
+			int x = (i / 3) * 3 + (j / 3);
+			int y = (i % 3) * 3 + (j % 3);
+			mCell[x][y] = &mNum[i][j];
+		}
+	}
 
 	mStrSolved = "";
 }
@@ -58,37 +63,34 @@ void CSudoku::Input()
 		}
 
 		for(int j = 0; j < 9; j++) {
-			mHorizontal[i][j] = atoi(tokens[j].c_str());
+			mNum[i][j] = atoi(tokens[j].c_str());
 		}
 	}
-
-	Sync();
 }
 
 
-void CSudoku::Input(string InputStr)
+void CSudoku::Input(const string & InputStr)
 {
-	string _input(InputStr);
-
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
-			mHorizontal[i][j] = _input[i*9 + j] - 48;
+			mNum[i][j] = InputStr[i*9 + j] - 48;
 		}
 	}
-
-	Sync();
 }
 
 
 string CSudoku::GetSolvedSudoku()
 {
 	if(Inspection()) {
-		for(auto& x: mHorizontal) {
-			for(auto& y: x) {
+		for(auto & x: mNum) {
+			for(auto & y: x) {
 				string tmpStr = to_string(y);
 				mStrSolved.append(tmpStr);
 			}
 		}
+	}
+	else {
+		DBG_WRN("Can not solved")
 	}
 
 	DBG_INFO("%s", mStrSolved.c_str())
@@ -97,221 +99,133 @@ string CSudoku::GetSolvedSudoku()
 }
 
 
-void CSudoku::Sync()
-{
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			// 행 요소를 열 요소에 대입
-			mVertical[j][i] = mHorizontal[i][j];
-
-			// 행 요소를 셀 요소에 대입
-			int x = (i / 3) * 3 + (j / 3);
-			int y = (i % 3) * 3 + (j % 3);
-			mCell[x][y] = mHorizontal[i][j];
-		}
-	}
-
-	///> 후보군 정리
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			RearrangeSub(i, j);
-		}
-	}
-}
-
-
-void CSudoku::Sync(int Row, int Col)
-{
-	mVertical[Col][Row] = mHorizontal[Row][Col];
-
-	int x = (Row / 3) * 3 + (Col / 3);
-	int y = (Row % 3) * 3 + (Col % 3);
-	mCell[x][y] = mHorizontal[Row][Col];
-
-	///> 후보군 정리
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			RearrangeSub(i, j);
-		}
-	}
-}
-
-
-void CSudoku::Prepare()
-{
-	/**
-	 * mSub는 행렬처럼 아래와 같은 형태로 사용
-	 * 0,0 0,1 0,2 | 0,3 0,4 0,5 | 0,6 0,7 0,8
-	 * 1,0 1,1 1,2 | 1,3 1,4 1,5 | 1,6 1,7 1,8
-	 * 2,0 2,1 2,2 | 2,3 2,4 2,5 | 2,6 2,7 2,8
-	 *
-	 * 3,0 3,1 3,2 | 3,3 3,4 3,5 | 3,6 3,7 3,8
-	 * 4,0 4,1 4,2 | 4,3 4,4 4,5 | 4,6 4,7 4,8
-	 * 5,0 5,1 5,2 | 5,3 5,4 5,5 | 5,6 5,7 5,8
-	 *
-	 * 6,0 6,1 6,2 | 6,3 6,4 6,5 | 6,6 6,7 6,8
-	 * 7,0 7,1 7,2 | 7,3 7,4 7,5 | 7,6 7,7 7,8
-	 * 8,0 8,1 8,2 | 8,3 8,4 8,5 | 8,6 8,7 8,8
-	 */
-
-	///> 각 셀에 후보항목 채우기
-	for(int i = 0; i < 9; i++) {
-		for(int j = 0; j < 9; j++) {
-			if(0 == mHorizontal[i][j]) {	///> 채워야할 값만 검사
-				for(int k = 1; k <= 9; k++) {
-					int cell = (i / 3) * 3 + (j / 3);
-					if(find(mCell[cell].begin(), mCell[cell].end(), k)				== mCell[cell].end()
-						&& find(mHorizontal[i].begin(), mHorizontal[i].end(), k)	== mHorizontal[i].end()
-						&& find(mVertical[j].begin(), mVertical[j].end(), k)		== mVertical[j].end()) {
-
-						mSub[i][j].push_back(k);
-					}
-				}
-			}
-		}
-	}
-}
-
-
 bool CSudoku::Solve()
 {
-	///> Normal 단계 해결
-	Prepare();
+	SSudoku _s = findMinSubCount();	// 가장 경우의 수가 적은 칸 탐색
 
-	Solve_Normal();		// for test
+	if (_s.row > 9) {	// 미해결
+		return false;
+	}
 
-	if(Inspection()) {
-		Print();
+	if (_s.row < 0) {	// 해결 완료
 		return true;
 	}
-	else {
-		DBG_WRN("Not Solved in Normal / Count: %d", mSolveCount)
+
+	for (int i = 1; i <= 9; i++) {
+		if (!_s.num[i - 1]) {	// 불가능한 숫자 건너뛰기
+			continue;
+		}
+
+		mNum[_s.row][_s.col] = i;
+		DBG_TRACE("Insert(%d) in Row(%d) Col(%d)", i, _s.row, _s.col)
+
+		if(Solve()) {	// 재귀
+			return true;	// 해결 완료
+		}
 	}
+
+	// 미해결이므로 역재귀로 초기화 후, 다시 풀이 시도
+	mNum[_s.row][_s.col] = 0;
 
 	return false;
 }
 
 
-void CSudoku::Solve_Normal()
+SSudoku CSudoku::findMinSubCount()
 {
-	int count = 0;
+	SSudoku minSub = {-1, -1};
+	int minCount = 10;
 
 	for(int i = 0; i < 9; i++) {
 		for(int j = 0; j < 9; j++) {
-			if(1 == mSub[i][j].size()) {
-				int value = mSub[i][j][0];
+			if(mNum[i][j] > 0) {	// 채워져 있는 숫자 건너뛰기
+				continue;
+			}
 
-				// 후보군이 1개일 때, 숫자 대입
-				Insert(i, j, value);
-				count++;
+			SSudoku temp = findPossibleSub(i, j);
+			int subCount = sizeNums(temp);
+
+			if(0 == subCount) {
+				return SSudoku {10, 10};	// C++11
+			}
+			else if(1 == subCount) {	// 1개가 가능한 최소값이므로 바로 리턴
+				return temp;
+			}
+			else if(minCount > subCount) {
+				minCount = subCount;
+				minSub = temp;
 			}
 		}
 	}
 
-	mSolveCount++;
-
-	///> 해결될 때까지 재귀
-	if(count) Solve_Normal();
+	return minSub;
 }
 
 
-void CSudoku::Insert(int Row, int Col, int Target)
+SSudoku CSudoku::findPossibleSub(int Row, int Col)
 {
-	mHorizontal[Row][Col] = Target;
-	mSub[Row][Col].clear();
-	Sync(Row, Col);
+	SSudoku _s = {Row, Col, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
-	DBG_TRACE("[Hor]: Target(%d) Row(%d) Col(%d)", Target, Row, Col)
-	DBG_TRACE_D2(mHorizontal)
+	int cell = (Row / 3) * 3 + (Col / 3);    // 행열 좌표로 셀 번호 구하는 공식
 
-	RemoveSub(Row, Col, Target);
-}
+	for (int i = 0; i < 9; i++) {
 
-
-void CSudoku::RemoveSub(int Row, int Col, int Target)
-{
-	///> 채워진 값을 후보군에서 없애는 부분
-	int cell = (Row / 3) * 3 + (Col / 3);
-	int x = (cell / 3) * 3;
-	int y = (cell % 3) * 3;
-
-	///> 셀
-	for(int i = 0; i < 3; i++) {
-		for(int j = 0; j < 3; j++) {
-			auto it = find(mSub[x + i][y + j].begin(), mSub[x + i][y + j].end(), Target);
-			if(it != mSub[x + i][y + j].end()) {
-				mSub[x + i][y + j].erase(it);
-				DBG_TRACE("[RemCel]: %d is erased - mSub[%d][%d]", Target, x + i, y + i)
-				DBG_TRACE_D1(mSub[x + i][y + j])
-			}
+		if (*mRow[Row][i] > 0) {	// 행 탐색
+			_s.num[*mRow[Row][i] - 1] = false;
+		}
+		if (*mCol[Col][i] > 0) {	// 열 탐색
+			_s.num[*mCol[Col][i] - 1] = false;
+		}
+		if (*mCell[cell][i] > 0) {	// 셀 탐색
+			_s.num[*mCell[cell][i] - 1] = false;
 		}
 	}
 
-	for(int i = 0; i < 9; i++) {
-		///> 가로
-		auto it = find(mSub[Row][i].begin(), mSub[Row][i].end(), Target);
-		if(it != mSub[Row][i].end()) {
-			mSub[Row][i].erase(it);
-			DBG_TRACE("[RemVer]: %d is erased - mSub[%d][%d]", Target, Row, i)
-			DBG_TRACE_D1(mSub[Row][i])
-		}
-
-		///> 세로
-		it = find(mSub[i][Col].begin(), mSub[i][Col].end(), Target);
-		if(it != mSub[i][Col].end()) {
-			mSub[i][Col].erase(it);
-			DBG_TRACE("[RemVer]: %d is erased - mSub[%d][%d]", Target, i, Col)
-			DBG_TRACE_D1(mSub[i][Col])
-		}
-	}
+	return _s;
 }
 
+
+int CSudoku::sizeNums(SSudoku s)
+{
+	bool *n = s.num;
+	int size = 0;
+	for(int i = 0; i < 9; i++)
+		size += n[i];
+
+	return size;
+}
 
 bool CSudoku::Inspection()
 {
+	///> 풀이 후 최종검사
 	for(int i = 0; i < 9; i++) {
-		if(!ValidCheck(mHorizontal[i])) {
-			DBG_WRN("ValidCheck(Horizontal)[%d] is false", i)
-			DBG_TRACE_D1(mHorizontal[i])
+		int sumRow = 0;
+		int sumCol = 0;
+		int sumCell = 0;
+
+		for(int j = 0; j < 9; j++) {
+			sumRow += *mRow[i][j];
+			sumCol += *mCol[i][j];
+			sumCell += *mCell[i][j];
+		}
+
+		if(45 != sumRow) {
+			DBG_WRN("Row[%d] is false", i)
+			DBG_TRACE_D1(mRow[i])
 			return false;
 		}
 
-		if(!ValidCheck(mVertical[i])) {
-			DBG_WRN("ValidCheck(Vertical)[%d] is false", i)
-			DBG_TRACE_D1(mVertical[i])
+		if(45 != sumCol) {
+			DBG_WRN("Col[%d] is false", i)
+			DBG_TRACE_D1(mCol[i])
 			return false;
 		}
 
-		if(!ValidCheck(mCell[i])) {
-			DBG_WRN("ValidCheck(Cell)[%d] is false", i)
+		if(45 != sumCell) {
+			DBG_WRN("Cell[%d] is false", i)
 			DBG_TRACE_D1(mCell[i])
 			return false;
 		}
-
-		for(int j = 0; j < 9; j++) {
-			if(!mSub[i][j].empty()) {
-				DBG_WRN("ValidCheck(Sub)[%d][%d] is false", i, j)
-				DBG_TRACE_D1(mSub[i][j])
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-
-bool CSudoku::ValidCheck(vector<int> & vRef)
-{
-	///> 중복 원소 제거
-	vector<int> v(vRef);
-	std::sort(v.begin(), v.end(), std::less<int>());
-	auto pos = std::unique(v.begin(), v.end());
-	v.erase(pos, v.end());
-
-	///> 유효성 검사
-	if(9 != v.size() || 45 != accumulate(v.begin(), v.end(), 0)) {
-		return false;
 	}
 
 	return true;
@@ -320,10 +234,10 @@ bool CSudoku::ValidCheck(vector<int> & vRef)
 
 void CSudoku::Print()
 {
-	cout << endl << "Output: " << endl;
+	cout << "Output: " << endl;
 
 	int count = 0;
-	for(auto & i: mHorizontal) {
+	for(auto & i: mNum) {
 		for(auto & j: i) {
 			cout << j << " ";
 			if(0 == ++count % 3) cout << " ";
@@ -333,12 +247,3 @@ void CSudoku::Print()
 	}
 }
 
-
-void CSudoku::RearrangeSub(int Row, int Col)
-{
-	if(mSub[Row][Col].size() > 1) {
-		std::sort(mSub[Row][Col].begin(), mSub[Row][Col].end(), std::less<int>());
-		auto pos = std::unique(mSub[Row][Col].begin(), mSub[Row][Col].end());
-		mSub[Row][Col].erase(pos, mSub[Row][Col].end());
-	}
-}
